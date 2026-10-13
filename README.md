@@ -1,84 +1,85 @@
-# Dari 26 Ribu Jawaban Survei yang Berantakan ke Gudang Data yang Bisa Dipercaya
+# From 26,000 Messy Survey Responses to a Data Warehouse You Can Trust
 
-**Portofolio Data Science #1: Data Cleansing, ETL, SQL Analytics, dan Predictive Modeling**
-Michael Anggi G.A. · Dataset: *Ask a Manager Salary Survey 2021* (data terbuka)
+**Data Science Portfolio #1: Data Cleansing, ETL, SQL Analytics, and Predictive Modeling**
 
-> **Ringkasan.** Survei gaji publik dengan 26.232 responden ini sengaja dipilih karena datanya sangat kotor. Saya membangun pipeline ETL yang bisa diulang (satu perintah), gudang data SQLite dengan jejak audit untuk setiap koreksi, 10 query analitik SQL, dan model prediksi gaji dengan evaluasi yang jujur. Seluruh angka di bawah dapat direproduksi dari repo ini.
+Michael Anggi G.A. · Dataset: *Ask a Manager Salary Survey 2021* (open data)
 
-| Hasil kunci | Angka |
+> **Summary.** This public salary survey of 26,232 respondents was deliberately chosen because its data is extremely messy. I built a reproducible ETL pipeline (one command), a SQLite data warehouse with an audit trail for every correction, 10 SQL analytics queries, and a salary prediction model with an honest evaluation. All figures below can be reproduced from this repository.
+
+| Key Result | Figure |
 |---|---|
-| Ejaan negara berbeda → negara baku | **294 → 91** |
-| Ejaan industri berbeda → kategori baku | **1.068 → 32** |
-| Baris layak analisis | **25.868 dari 26.232 (98,6%)**, sisanya dikeluarkan dengan alasan tercatat |
-| Baris responden AS yang bisa dipakai | **21.453** (pencocokan naif `== "United States"` hanya menangkap 9.010) |
-| Gerbang kualitas data (post-load) | **18/18 lulus** · 37 unit test lulus |
-| Model gaji (holdout, disentuh sekali) | **R² 0,62**, error median **17%** (baseline 28%) |
-| Interval prediksi 80% | cakupan nyata **79,9%** setelah kalibrasi conformal (mentah: 74,2%) |
+| Inconsistent country names → standardized countries | **294 → 91** |
+| Inconsistent industry names → standardized categories | **1,068 → 32** |
+| Analysis-ready records | **25,868 out of 26,232 (98.6%)**, with the remainder excluded for documented reasons |
+| Usable US respondent records | **21,453** (a naive `== "United States"` match captures only 9,010) |
+| Post-load data quality gates | **18/18 passed** · 37 unit tests passed |
+| Salary model (holdout, evaluated only once) | **R² 0.62**, median percentage error **17%** (baseline: 28%) |
+| 80% prediction interval | Actual coverage **79.9%** after conformal calibration (raw: 74.2%) |
 
 ---
 
-## 1. Masalah dan data
+## 1. Problem and Data
 
-Pertanyaan bisnis yang saya tetapkan: *"Berapa kisaran gaji wajar untuk sebuah profil pekerjaan, faktor apa yang paling menentukan, dan seberapa jauh angka ini bisa dipercaya?"*
+The business question I defined was: *"What is a reasonable salary range for a given job profile, which factors matter most, and how much confidence should we place in the estimate?"*
 
-Sumber: survei Ask a Manager (April–Mei 2021), 26.232 baris × 18 kolom, diambil dari repositori TidyTuesday (tautan di bagian Sumber). Data ini mewakili masalah data nyata: isian bebas, campuran mata uang, typo, dan jawaban ganda.
+Source: Ask a Manager survey (April–May 2021), 26,232 rows × 18 columns, obtained from the TidyTuesday repository (link in the Sources section). This dataset represents real-world data quality challenges: free-text entries, mixed currencies, typos, and duplicate submissions.
 
-Contoh kekacauan yang ditemukan saat profiling:
+Examples of data issues discovered during profiling:
 
-- Negara: `USA`, `US`, `U.S.`, `United states`, `Unites States`, `Unitef Stated`, bahkan `California` dan kalimat panjang.
-- Gaji: dari **0 sampai 870.000.000**, dan satu baris "USD 102 juta" yang ternyata peso Kolombia salah label.
-- Mata uang "Other" dengan teks bebas: `Canadian`, `BRL (R$)`, `$76,302.34`, `RSU / equity`.
-- Kolom ras berisi pilihan ganda yang opsinya mengandung koma (`Hispanic, Latino, or Spanish origin`), sehingga `split(",")` akan merusaknya.
-- 148 pengiriman ganda, 233 responden yang "lama di bidang" melebihi "lama bekerja", dan 20 kombinasi usia–pengalaman yang mustahil.
+- Countries: `USA`, `US`, `U.S.`, `United states`, `Unites States`, `Unitef Stated`, even `California` and long free-text responses.
+- Salaries: ranging from **0 to 870,000,000**, including one "USD 102 million" entry that turned out to be Colombian pesos mislabeled as USD.
+- "Other" currency entries with free text: `Canadian`, `BRL (R$)`, `$76,302.34`, `RSU / equity`.
+- The race column contains multiple selections whose options include commas (`Hispanic, Latino, or Spanish origin`), so using `split(",")` would corrupt the data.
+- 148 duplicate submissions, 233 respondents whose "years in field" exceeded their "years of overall experience", and 20 impossible age–experience combinations.
 
-## 2. Arsitektur pipeline
+## 2. Pipeline Architecture
 
 ```
-CSV mentah → extract → transform (aturan + audit log) → load SQLite → 18 gerbang kualitas
-                                                          │
-                                                          ├→ 10 query SQL analitik (CTE, window function)
-                                                          └→ model gaji → figures + model tersimpan
+Raw CSV → extract → transform (rules + audit log) → load into SQLite → 18 quality gates
+                                                             │
+                                                             ├→ 10 analytical SQL queries (CTEs, window functions)
+                                                             └→ salary model → figures + saved model
 ```
 
-| Lapisan | Isi |
+| Layer | Contents |
 |---|---|
-| **Raw** | `raw_survey`, persis seperti diterima dan tidak pernah diubah |
-| **Dimensi** | `dim_country`, `dim_industry`, `dim_job_family`, `dim_currency` |
-| **Fakta** | `fact_response` (26.232 baris, FK + CHECK constraint) dan `bridge_response_race` (many-to-many) |
-| **Audit** | `dq_issue_log` (12.324 catatan koreksi per baris), `dq_summary`, `map_country_raw`, `map_industry_raw` |
-| **View** | `vw_analysis`, hanya baris yang layak dipercaya |
+| **Raw** | `raw_survey`, preserved exactly as received and never modified |
+| **Dimensions** | `dim_country`, `dim_industry`, `dim_job_family`, `dim_currency` |
+| **Facts** | `fact_response` (26,232 rows, FK + CHECK constraints) and `bridge_response_race` (many-to-many) |
+| **Audit** | `dq_issue_log` (12,324 row-level correction records), `dq_summary`, `map_country_raw`, `map_industry_raw` |
+| **Views** | `vw_analysis`, containing only records considered reliable enough for analysis |
 
-Prinsip desain: **baris tidak pernah dihapus diam-diam**. Baris yang bermasalah diberi flag dan alasan, lalu dikeluarkan dari analisis lewat satu gerbang (`is_analysis_ready`), sehingga setiap keputusan bisa diaudit dan diubah dengan mengatur satu konstanta di `config.py`.
+Design principle: **no row is ever silently deleted**. Problematic records are flagged with documented reasons, then excluded from analysis through a single gate (`is_analysis_ready`), allowing every decision to be audited and changed by adjusting a single constant in `config.py`.
 
-## 3. Cleansing: apa yang dilakukan dan mengapa
+## 3. Data Cleansing: What Was Done and Why
 
-![Dampak cleansing](reports/figures/fig1_cleaning_impact.png)
+![Impact of data cleansing](reports/figures/fig1_cleaning_impact.png)
 
-| Masalah | Perlakuan | Dampak |
+| Issue | Treatment | Impact |
 |---|---|---|
-| Negara: 294 ejaan | Bertingkat: *override* manual → alias → nama resmi (pycountry) → fuzzy match (difflib) → pencarian substring pada kalimat panjang → **"Unresolved"** (tidak pernah ditebak) | 91 negara; hanya 30 baris (0,11%) tak terselesaikan |
-| Industri: 1.068 ejaan | Persis → sinonim → 39 aturan kata kunci berurutan → "Other / Unclassified" | 32 kategori; 99% baris terklasifikasi. Sampel pemetaan saya audit dan perbaiki (misal `Automotive technician` sempat salah masuk Tech) |
-| Judul pekerjaan: 12.622 variasi | Normalisasi teks, lalu *seniority* dan *job family* berbasis aturan | 95,8% baris punya job family |
-| Mata uang "Other" | Alias teks → kode ISO → pola regex; `AUD/NZD` dibedakan lewat negara | 578 baris diperbaiki (469 label `AUD/NZD` dibedakan lewat negara; 109 dari 133 isian "Other" dipulihkan); 24 tak terselesaikan dan dikeluarkan |
-| Gaji tidak masuk akal | Dikonversi ke USD, lalu aturan berurutan: ≤0; 1–999 (ambigu ribuan/per jam); < USD 10 rb; > USD 1 jt | 143 baris dikeluarkan dengan alasan tercatat |
-| Bonus > 5× gaji | Di-null-kan (salah ketik) | 30 baris |
-| Pengiriman ganda | Jawaban identik dalam ≤48 jam: simpan yang pertama | 148 baris |
-| Lama di bidang > lama bekerja | Dibatasi (*cap*) ke total pengalaman | 233 baris diperbaiki |
-| Usia vs pengalaman mustahil | Dikeluarkan dari analisis | 20 baris |
-| Ras pilihan ganda | Dicocokkan dengan daftar opsi resmi, bukan `split(",")`; disimpan di tabel *bridge* | 27.318 relasi, tanpa fragmen palsu |
+| Countries: 294 variants | Layered approach: manual overrides → aliases → official names (`pycountry`) → fuzzy matching (`difflib`) → substring matching for long responses → **"Unresolved"** (never guessed) | 91 countries; only 30 rows (0.11%) unresolved |
+| Industries: 1,068 variants | Exact matches → synonyms → 39 ordered keyword rules → "Other / Unclassified" | 32 categories; 99% of rows classified. I audited and corrected sample mappings (e.g., `Automotive technician` was initially misclassified as Tech) |
+| Job titles: 12,622 variants | Text normalization, followed by rule-based *seniority* and *job family* classification | 95.8% of rows assigned a job family |
+| "Other" currencies | Text aliases → ISO codes → regex patterns; `AUD/NZD` disambiguated using country | 578 rows corrected (469 `AUD/NZD` labels disambiguated using country; 109 of 133 "Other" entries recovered); 24 unresolved entries excluded |
+| Implausible salaries | Converted to USD, then sequential rules applied: ≤0; 1–999 (ambiguous thousands/hourly rates); < USD 10,000; > USD 1 million | 143 rows excluded with documented reasons |
+| Bonus > 5× salary | Set to null (presumed typo) | 30 rows |
+| Duplicate submissions | Identical responses submitted within ≤48 hours: retain the first | 148 rows |
+| Years in field > years of overall experience | Capped at total experience | 233 rows corrected |
+| Impossible age vs. experience | Excluded from analysis | 20 rows |
+| Multiple-selection race field | Matched against the official list of options rather than using `split(",")`; stored in a *bridge* table | 27,318 relationships, with no false fragments |
 
-Dua keputusan yang sengaja saya ambil dan saya tulis terbuka:
+Two decisions I deliberately made and documented:
 
-1. **Gaji 1–999 dikeluarkan, tidak "diselamatkan" dengan ×1000.** Judul seperti *Chief Data Scientist: 130* kemungkinan besar ribuan, tetapi *Operations Manager: 35* bisa jadi tarif per jam. Dengan 75 baris (0,29%), kehilangan datanya lebih murah daripada risiko menebak.
-2. **Kurs mata uang di-hardcode (perkiraan Mei 2021) dan hanya dipakai untuk perbandingan deskriptif antarnegara.** Model memakai responden AS saja (USD), sehingga kesalahan kurs tidak bisa masuk ke model.
+1. **Salaries from 1–999 were excluded rather than "rescued" by multiplying by 1,000.** A title such as *Chief Data Scientist: 130* probably means thousands, but *Operations Manager: 35* could represent an hourly rate. With only 75 rows (0.29%), losing the data was preferable to the risk of guessing.
+2. **Exchange rates were hardcoded as approximate May 2021 rates and used only for descriptive comparisons across countries.** The model uses US respondents only (USD), so exchange-rate errors cannot affect the model.
 
-## 4. Kualitas data sebagai kode
+## 4. Data Quality as Code
 
-`src/quality.py` menjalankan 18 gerbang terhadap gudang yang sudah terisi, dan pipeline **berhenti dengan error** bila satu saja gagal. Contohnya: rekonsiliasi jumlah baris (fakta = mentah = 26.232), tidak ada FK yatim, semua baris layak berada dalam rentang gaji valid, tidak ada duplikat di baris layak, ambang cakupan (negara tak terselesaikan ≤ 0,5%, industri tak terklasifikasi ≤ 2%, minimal 97% baris bertahan agar cleansing tidak berlebihan). Laporan lengkap: `reports/data_quality_report.md`.
+`src/quality.py` runs 18 gates against the populated warehouse, and the pipeline **fails with an error** if even one gate fails. Examples include row-count reconciliation (fact = raw = 26,232), no orphan foreign keys, all eligible records falling within the valid salary range, no duplicates among eligible records, and coverage thresholds (unresolved countries ≤ 0.5%, unclassified industries ≤ 2%, at least 97% of rows retained to prevent excessive cleansing). Full report: `reports/data_quality_report.md`.
 
-## 5. Analisis SQL
+## 5. SQL Analytics
 
-Seluruh analisis ditulis sebagai SQL murni di `sql/analysis/`. SQLite tidak punya fungsi persentil, jadi median dan kuartil dihitung manual dengan `ROW_NUMBER()` dan `COUNT() OVER`:
+All analyses are written in pure SQL under `sql/analysis/`. SQLite has no built-in percentile function, so medians and quartiles are calculated manually using `ROW_NUMBER()` and `COUNT() OVER`:
 
 ```sql
 WITH ranked AS (
@@ -91,71 +92,71 @@ SELECT band, n, ROUND(AVG(CASE WHEN rn IN ((n+1)/2, (n+2)/2) THEN v END)) AS med
 FROM ranked GROUP BY ord, band ORDER BY ord;
 ```
 
-![Gaji berdasarkan pengalaman](reports/figures/fig2_salary_by_experience.png)
+![Salary by experience](reports/figures/fig2_salary_by_experience.png)
 
-![Industri bergaji tertinggi](reports/figures/fig3_top_industries.png)
+![Highest-paying industries](reports/figures/fig3_top_industries.png)
 
-Temuan (responden AS, n ≥ ambang minimum per sel; semua deskriptif):
+Findings (US respondents, n ≥ the minimum sample-size threshold per group; all findings are descriptive):
 
-- **Kurva pengalaman melandai.** Median naik dari USD 59,7 rb (≤1 tahun) ke USD 91 rb (21–30 tahun); setelah ±20 tahun hampir datar (`LAG()` menunjukkan kenaikan antar-band turun dari +10–13% menjadi +6% lalu ≈0).
-- **Industri menentukan.** Tech: median total kompensasi USD 130 rb (1,59× median AS), diikuti Biotech & Pharma (USD 123 rb) dan Law (USD 100,5 rb).
-- **Peran data vs lainnya.** Pada tiap band pengalaman dengan sampel cukup, median gaji peran *Data & Analytics* 1,3–1,6× kelompok di luar data/software/IT; peran *Software Engineering* masih lebih tinggi lagi (misal pada 11–20 tahun: USD 145 rb vs USD 115 rb).
-- **Premi pendidikan pada pengalaman setara (11–20 tahun):** S2 hanya +2% dari S1, PhD +18%, gelar profesional (MD/JD) +47%; "some college" −18%.
-- **Geografi.** California median USD 101 rb tertinggi, diikuti Washington, DC, New York. Perbandingan antarnegara (kurs perkiraan, tanpa penyesuaian daya beli) hanya indikatif.
+- **The experience curve flattens.** Median salary rises from USD 59.7k (≤1 year) to USD 91k (21–30 years); after approximately 20 years, growth nearly levels off (`LAG()` shows increases across bands declining from +10–13% to +6%, then approximately 0).
+- **Industry matters.** Tech: median total compensation of USD 130k (1.59× the US median), followed by Biotech & Pharma (USD 123k) and Law (USD 100.5k).
+- **Data roles vs. other roles.** Within each experience band with sufficient samples, median salaries for *Data & Analytics* roles are 1.3–1.6× those of groups outside data/software/IT; *Software Engineering* roles pay even more (e.g., at 11–20 years: USD 145k vs. USD 115k).
+- **Education premium at comparable experience levels (11–20 years).** A master's degree (MSc/MA) is associated with only +2% compared with a bachelor's degree (BSc/BA), a PhD with +18%, a professional degree (MD/JD) with +47%, and "some college" with −18%.
+- **Geography.** California has the highest median salary at USD 101k, followed by Washington, DC, and New York. Cross-country comparisons (using approximate exchange rates, without purchasing power adjustments) are indicative only.
 
-## 6. Pemodelan
+## 6. Modeling
 
-**Desain evaluasi (bagian yang paling sering salah di proyek serupa):**
+**Evaluation design (the part most often done incorrectly in similar projects):**
 
-- Target: `log(gaji USD)`; hanya responden AS (21.453 baris).
-- Split 80/20. Seleksi model memakai **5-fold CV pada 80% saja**; set uji 20% **dipakai satu kali** di akhir.
-- Fitur: pengalaman, usia, pendidikan, industri, job family, seniority, negara bagian, dan teks judul pekerjaan. **Gender dan ras bukan fitur**; kompensasi lain (bonus) tidak dipakai karena bocor dari target.
-- Kandidat dibandingkan dengan baseline naif (median per job family); model akhir adalah blend Ridge + TF-IDF judul (bobot 0,4) dan gradient boosting dengan token judul (bobot 0,6) hasil *randomized search*.
+- Target: `log(salary USD)`; US respondents only (21,453 rows).
+- 80/20 split. Model selection uses **5-fold CV on the 80% training set only**; the 20% test set is **used exactly once** at the end.
+- Features: experience, age, education, industry, job family, seniority, state, and job-title text. **Gender and race are not model features**; other compensation (bonus) is excluded to prevent target leakage.
+- Candidates are compared against a naive baseline (median per job family). The final model is a blend of Ridge + TF-IDF job titles (weight 0.4) and gradient boosting with job-title tokens (weight 0.6), selected through *randomized search*.
 
-![Performa model](reports/figures/fig4_model_performance.png)
+![Model performance](reports/figures/fig4_model_performance.png)
 
-| Model | R² (CV, log-gaji) |
+| Model | R² (CV, log-salary) |
 |---|---:|
-| Baseline: median per job family | 0,19 |
-| Ridge (fitur terstruktur) | 0,51 |
-| Ridge + TF-IDF judul | 0,59 |
-| Gradient boosting + token judul | 0,60 |
-| **Blend (terpilih)** | **0,61** |
+| Baseline: median per job family | 0.19 |
+| Ridge (structured features) | 0.51 |
+| Ridge + TF-IDF job titles | 0.59 |
+| Gradient boosting + job-title tokens | 0.60 |
+| **Selected blend** | **0.61** |
 
-**Holdout:** R² 0,616 · RMSE log 0,306 · MAE USD 21.006 · error persentase median 17,2% · 57% prediksi dalam ±20% · 74% dalam ±30%. Baseline pada set yang sama: R² 0,168 dan error median 28%.
+**Holdout results:** R² 0.616 · log RMSE 0.306 · MAE USD 21,006 · median percentage error 17.2% · 57% of predictions within ±20% · 74% within ±30%. Baseline on the same test set: R² 0.168 and median percentage error 28%.
 
-**Interval prediksi.** Kuantil 10%/90% mentah hanya mencakup 74,2% data uji (target 80%), artinya terlalu percaya diri. Dengan *conformalized quantile regression* (kalibrasi pada sebagian data latih), cakupan menjadi **79,9%** dengan lebar median USD 59,8 rb. Model dapat dipakai lewat `python -m src.predict`.
+**Prediction intervals.** The raw 10th/90th percentile interval covered only 74.2% of test observations (target: 80%), meaning the model was overconfident. With *conformalized quantile regression* (calibrated on a portion of the training data), coverage increased to **79.9%**, with a median interval width of USD 59.8k. The model can be used via `python -m src.predict`.
 
-![Fitur penting](reports/figures/fig5_feature_importance.png)
+![Feature importance](reports/figures/fig5_feature_importance.png)
 
-Industri, judul pekerjaan, negara bagian, seniority, lama di bidang, dan pendidikan memberi kontribusi terbesar. Usia dan total pengalaman tampak kecil karena berkorelasi kuat dengan "lama di bidang"; permutation importance memang meremehkan fitur yang saling berkorelasi.
+Industry, job title, state, seniority, years in field, and education contribute the most. Age and total experience appear less important because they are strongly correlated with "years in field"; permutation importance can underestimate the importance of correlated features.
 
-**Di mana model lemah:** peran eksekutif (error median 23%), sales (22%), dan *general management* (21%), karena kompensasi di sana sangat bervariasi; terbaik pada IT & Systems (13,5%). Band ≥41 tahun hanya 17 sampel uji, jadi angkanya tidak bisa dipercaya.
+**Where the model struggles:** executive roles (median error 23%), sales (22%), and *general management* (21%), due to substantial compensation variability; performance is best for IT & Systems (13.5%). The ≥41-year experience band has only 17 test samples, so its metrics are unreliable.
 
-## 7. Audit keadilan: gender gap
+## 7. Fairness Audit: Gender Pay Gap
 
-![Gender gap](reports/figures/fig6_gender_gap.png)
+![Gender pay gap](reports/figures/fig6_gender_gap.png)
 
-Median gaji perempuan hanya 65–89% dari laki-laki pada semua band pengalaman (selisih terbesar di 11–30 tahun). Karena **gender bukan fitur model**, saya memeriksa selisih aktual vs prediksi per gender di set uji: perempuan +0,4% (CI 95%: −0,6% s.d. +1,4%), laki-laki **+2,9%** (CI: +0,4% s.d. +5,2%). Artinya, sebagian besar selisih mentah dijelaskan oleh *komposisi* (industri, peran, seniority), dengan sisa selisih kecil (±2,5 poin persen) yang tidak dijelaskan fitur.
+Women's median salaries are only 65–89% of men's across all experience bands, with the largest gaps at 11–30 years. Since **gender is not a model feature**, I examined actual-versus-predicted differences by gender in the test set: women +0.4% (95% CI: −0.6% to +1.4%), men **+2.9%** (CI: +0.4% to +5.2%). This suggests that much of the raw gap is explained by *composition* (industry, role, seniority), with a small residual difference (approximately 2.5 percentage points) unexplained by the features.
 
-Dua kehati-hatian penting: (1) ini **korelasi pada survei yang self-selected**, bukan bukti kausal diskriminasi; (2) seniority dan peran sendiri bisa dipengaruhi ketimpangan (*bad controls*), sehingga selisih sebenarnya bisa lebih besar dari 2,5 poin.
+Two important caveats: (1) these are **correlations in a self-selected survey**, not causal evidence of discrimination; (2) seniority and role may themselves be influenced by inequality (*bad controls*), meaning the actual gap could be larger than 2.5 percentage points.
 
-## 8. Keterbatasan
+## 8. Limitations
 
-- **Bias sampel:** pembaca blog Ask a Manager, didominasi perempuan, kulit putih, dan sektor tech/nirlaba/pendidikan; hasil tidak mewakili populasi pekerja AS.
-- **Kurs perkiraan dan tanpa penyesuaian daya beli:** perbandingan antarnegara hanya ilustratif.
-- **Pemetaan berbasis aturan:** ~4% judul masuk "Other", dan aturan kata kunci tetap bisa salah pada kasus langka. Langkah berikut yang logis: embedding teks atau klasifikasi terawasi dengan sampel berlabel.
-- **Gaji dilaporkan sendiri, tanpa verifikasi.** Satu band survei = rentang lebar, sehingga "pengalaman" di model adalah titik tengah band.
-- **Skala:** SQLite cukup untuk 26 ribu baris. Desain (lapisan raw/clean, aturan sebagai konfigurasi, gerbang kualitas) bisa dipindah ke gudang data lain, tetapi proyek ini tidak mendemonstrasikan tooling Big Data.
+- **Sampling bias:** Ask a Manager blog readers, disproportionately women, white respondents, and workers in tech, nonprofits, and education; the results are not representative of the US workforce.
+- **Approximate exchange rates and no purchasing power adjustment:** cross-country comparisons are illustrative only.
+- **Rule-based mapping:** approximately 4% of job titles fall into "Other", and keyword rules can still misclassify rare cases. A logical next step would be text embeddings or supervised classification using a labeled sample.
+- **Self-reported salaries, without verification.** Survey experience bands cover broad ranges, so the model uses the midpoint of each band as the experience value.
+- **Scale:** SQLite is sufficient for 26,000 rows. The design (raw/clean layers, configurable rules, quality gates) can be migrated to another data warehouse, but this project does not demonstrate Big Data tooling.
 
-## 9. Cara menjalankan
+## 9. How to Run
 
 ```bash
 pip install -r requirements.txt
-python -m src.run_pipeline          # ±2,5 menit: ETL → gerbang kualitas → SQL → model → grafik
-python -m src.run_pipeline --skip-model   # hanya ETL + kualitas + SQL (±5 detik)
-pytest -q                           # 37 unit test
-python -m src.predict               # contoh inferensi dengan interval 80%
+python -m src.run_pipeline          # ~2.5 minutes: ETL → quality gates → SQL → model → figures
+python -m src.run_pipeline --skip-model   # ETL + quality + SQL only (~5 seconds)
+pytest -q                           # 37 unit tests
+python -m src.predict               # example inference with an 80% prediction interval
 ```
 
 ```
@@ -165,14 +166,14 @@ tests/  test_cleaning.py
 reports/  data_quality_report.md · model_metrics.json · tables/ · figures/
 ```
 
-## 10. Pemetaan ke kebutuhan lowongan
+## 10. Mapping to Job Requirements
 
-| Kebutuhan | Bukti di proyek ini |
+| Requirement | Evidence in This Project |
 |---|---|
-| SQL Query | Skema relasional dengan FK/CHECK, view, dan 10 query analitik (CTE, window function, pivot kondisional, `LAG`) |
-| Python | Pipeline modular, unit test, evaluasi model dengan scikit-learn |
-| Proses ETL | extract → transform → load idempoten dengan audit log dan gerbang kualitas |
-| Data Science end-to-end | Perumusan masalah, cleansing, analisis, modeling, kalibrasi ketidakpastian, audit keadilan, inferensi |
-| Platform Data Science / Big Data | Tidak ditunjukkan di proyek ini (lihat Keterbatasan) |
+| SQL Querying | Relational schema with FK/CHECK constraints, views, and 10 analytical queries (CTEs, window functions, conditional pivots, `LAG`) |
+| Python | Modular pipeline, unit tests, model evaluation with scikit-learn |
+| ETL Processes | Idempotent extract → transform → load with audit logs and quality gates |
+| End-to-end Data Science | Problem formulation, cleansing, analysis, modeling, uncertainty calibration, fairness audit, inference |
+| Data Science / Big Data Platforms | Not demonstrated in this project (see Limitations) |
 
-**Sumber data:** Ask a Manager Salary Survey 2021, didistribusikan oleh TidyTuesday: `https://github.com/rfordatascience/tidytuesday/tree/master/data/2021/2021-05-18`. Kredit data milik penyelenggara survei.
+**Data source:** Ask a Manager Salary Survey 2021, distributed by TidyTuesday: `https://github.com/rfordatascience/tidytuesday/tree/master/data/2021/2021-05-18`. Data credit belongs to the survey organizers.
