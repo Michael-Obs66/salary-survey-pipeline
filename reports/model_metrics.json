@@ -1,0 +1,303 @@
+{
+  "n_total": 21453,
+  "n_train": 17162,
+  "n_test": 4291,
+  "hgb_best_params": {
+    "min_samples_leaf": 20,
+    "max_tokens": 300,
+    "max_leaf_nodes": 15,
+    "learning_rate": 0.08,
+    "l2_regularization": 5.0
+  },
+  "hgb_search_cv_r2": 0.5916559141100893,
+  "blend_weight_ridge": 0.4,
+  "cv": {
+    "Baseline: median by job family": {
+      "r2_log": 0.19050601338790607,
+      "rmse_log": 0.456209922431937,
+      "mae_usd": 31966.568068201206,
+      "median_ape_pct": 28.571428571428637,
+      "within_20pct": 36.09136464281552,
+      "within_30pct": 52.19671366973546
+    },
+    "Ridge (structured features)": {
+      "r2_log": 0.514409030310047,
+      "rmse_log": 0.3533403332052104,
+      "mae_usd": 24504.083334029907,
+      "median_ape_pct": 20.610195253793783,
+      "within_20pct": 48.73557860389232,
+      "within_30pct": 66.88614380608321
+    },
+    "Ridge + job-title TF-IDF": {
+      "r2_log": 0.5893176346130637,
+      "rmse_log": 0.32494580954250724,
+      "mae_usd": 22235.93571352845,
+      "median_ape_pct": 18.43557495933377,
+      "within_20pct": 53.496096026104176,
+      "within_30pct": 72.09532688497843
+    },
+    "Gradient boosting + title tokens": {
+      "r2_log": 0.5963312100719247,
+      "rmse_log": 0.3221591715247449,
+      "mae_usd": 21779.282385638115,
+      "median_ape_pct": 17.83719817985244,
+      "within_20pct": 54.68476867497961,
+      "within_30pct": 72.58478032863303
+    },
+    "Blend (selected)": {
+      "r2_log": 0.607761343527266,
+      "rmse_log": 0.317565349878787,
+      "mae_usd": 21495.155963768735,
+      "median_ape_pct": 17.691223620524855,
+      "within_20pct": 55.09264654469176,
+      "within_30pct": 73.42384337489804
+    }
+  },
+  "holdout": {
+    "r2_log": 0.6159273014602414,
+    "rmse_log": 0.3061687613520994,
+    "mae_usd": 21006.16484912996,
+    "median_ape_pct": 17.202479723312003,
+    "within_20pct": 56.58354695875087,
+    "within_30pct": 74.08529480307621
+  },
+  "holdout_baseline": {
+    "r2_log": 0.1676981523761628,
+    "rmse_log": 0.45070729569850515,
+    "mae_usd": 31634.390019158513,
+    "median_ape_pct": 27.999999999999975,
+    "within_20pct": 37.35725938009788,
+    "within_30pct": 53.11116289909113
+  },
+  "interval": {
+    "nominal_coverage_pct": 80.0,
+    "raw_quantile_coverage_pct": 74.15520857608949,
+    "conformal_coverage_pct": 79.88813796317875,
+    "conformal_median_width_usd": 59781.343760116026,
+    "conformal_qhat_log": 0.04291638955659026
+  },
+  "importance": [
+    {
+      "feature": "industry_std",
+      "r2_drop": 0.19156782701865874,
+      "std": 0.0044950181744868615
+    },
+    {
+      "feature": "job_title_norm",
+      "r2_drop": 0.15725070504901634,
+      "std": 0.004650741471301687
+    },
+    {
+      "feature": "state_std",
+      "r2_drop": 0.10554212186258284,
+      "std": 0.00483841679619267
+    },
+    {
+      "feature": "seniority",
+      "r2_drop": 0.10273165169915299,
+      "std": 0.0026312226036521768
+    },
+    {
+      "feature": "exp_field_years",
+      "r2_drop": 0.09871575875207282,
+      "std": 0.004597736329787855
+    },
+    {
+      "feature": "education_std",
+      "r2_drop": 0.09830655679590253,
+      "std": 0.0031401019043765495
+    },
+    {
+      "feature": "job_family",
+      "r2_drop": 0.05027663097796764,
+      "std": 0.0033396758343854876
+    },
+    {
+      "feature": "exp_overall_years",
+      "r2_drop": 0.0030825048740095867,
+      "std": 0.0004883266565646357
+    },
+    {
+      "feature": "age_mid",
+      "r2_drop": 0.0014130280900826325,
+      "std": 0.0004982265139176006
+    },
+    {
+      "feature": "is_data_role",
+      "r2_drop": 4.504156430676365e-05,
+      "std": 3.447716980970286e-05
+    }
+  ],
+  "gender_residuals": [
+    {
+      "gender": "Woman",
+      "n_test": 3392,
+      "mean_resid_log": 0.003709689580489368,
+      "ci_low": -0.0064256639969631,
+      "ci_high": 0.013935157352114447,
+      "pct_effect": 0.37165789954438644
+    },
+    {
+      "gender": "Man",
+      "n_test": 708,
+      "mean_resid_log": 0.028345369254139927,
+      "ci_low": 0.0042084665488520655,
+      "ci_high": 0.05215993508823787,
+      "pct_effect": 2.8750922012454216
+    }
+  ],
+  "error_by_experience": [
+    {
+      "exp_overall_band": "1 year or less",
+      "n": 70,
+      "median_ape_pct": 17.64966767927379
+    },
+    {
+      "exp_overall_band": "11 - 20 years",
+      "n": 1493,
+      "median_ape_pct": 17.381525907608477
+    },
+    {
+      "exp_overall_band": "2 - 4 years",
+      "n": 463,
+      "median_ape_pct": 16.864777164412274
+    },
+    {
+      "exp_overall_band": "21 - 30 years",
+      "n": 554,
+      "median_ape_pct": 20.676829165726605
+    },
+    {
+      "exp_overall_band": "31 - 40 years",
+      "n": 138,
+      "median_ape_pct": 19.323083386996526
+    },
+    {
+      "exp_overall_band": "41 years or more",
+      "n": 17,
+      "median_ape_pct": 33.535826802152755
+    },
+    {
+      "exp_overall_band": "5-7 years",
+      "n": 749,
+      "median_ape_pct": 16.74615802138825
+    },
+    {
+      "exp_overall_band": "8 - 10 years",
+      "n": 807,
+      "median_ape_pct": 15.87786642054626
+    }
+  ],
+  "error_by_family": [
+    {
+      "job_family": "IT & Systems",
+      "n": 111,
+      "median_ape_pct": 13.513362210272808
+    },
+    {
+      "job_family": "Design, Media & Creative",
+      "n": 230,
+      "median_ape_pct": 14.064371851106767
+    },
+    {
+      "job_family": "Research & Science",
+      "n": 156,
+      "median_ape_pct": 14.114707989167345
+    },
+    {
+      "job_family": "Consulting & Advisory",
+      "n": 82,
+      "median_ape_pct": 14.74377289034829
+    },
+    {
+      "job_family": "Data & Analytics",
+      "n": 108,
+      "median_ape_pct": 14.7625814580144
+    },
+    {
+      "job_family": "HR & Recruiting",
+      "n": 136,
+      "median_ape_pct": 14.797403831310774
+    },
+    {
+      "job_family": "Education & Academia",
+      "n": 226,
+      "median_ape_pct": 15.242886394687483
+    },
+    {
+      "job_family": "Marketing & Communications",
+      "n": 235,
+      "median_ape_pct": 15.283395151542484
+    },
+    {
+      "job_family": "Software Engineering",
+      "n": 272,
+      "median_ape_pct": 15.345404891890876
+    },
+    {
+      "job_family": "Finance & Accounting",
+      "n": 191,
+      "median_ape_pct": 15.933495187849875
+    },
+    {
+      "job_family": "Product / Project / Program Mgmt",
+      "n": 203,
+      "median_ape_pct": 15.976752651600645
+    },
+    {
+      "job_family": "Nonprofit / Development / Social",
+      "n": 133,
+      "median_ape_pct": 16.08458498029525
+    },
+    {
+      "job_family": "Engineering (non-software)",
+      "n": 219,
+      "median_ape_pct": 16.236923328667434
+    },
+    {
+      "job_family": "Library & Archives",
+      "n": 117,
+      "median_ape_pct": 17.202479723312003
+    },
+    {
+      "job_family": "Operations & Admin",
+      "n": 584,
+      "median_ape_pct": 17.533874067622886
+    },
+    {
+      "job_family": "Customer Support",
+      "n": 46,
+      "median_ape_pct": 17.735701909705192
+    },
+    {
+      "job_family": "Legal & Compliance",
+      "n": 189,
+      "median_ape_pct": 19.521814290090873
+    },
+    {
+      "job_family": "Healthcare & Clinical",
+      "n": 166,
+      "median_ape_pct": 19.78700082107199
+    },
+    {
+      "job_family": "General Management",
+      "n": 479,
+      "median_ape_pct": 21.040752000534813
+    },
+    {
+      "job_family": "Sales & Business Dev",
+      "n": 129,
+      "median_ape_pct": 22.2821583904024
+    },
+    {
+      "job_family": "Other",
+      "n": 166,
+      "median_ape_pct": 22.945079741870778
+    },
+    {
+      "job_family": "Executive / Leadership",
+      "n": 113,
+      "median_ape_pct": 23.290877756611504
+    }
+  ]
+}

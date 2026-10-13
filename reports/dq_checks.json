@@ -1,0 +1,155 @@
+{
+  "before_after": {
+    "rows_raw": 26232,
+    "rows_duplicate": 148,
+    "rows_salary_invalid": 167,
+    "rows_analysis_ready": 25868,
+    "country_distinct_raw": 294,
+    "country_distinct_clean": 91,
+    "country_unresolved_rows": 30,
+    "industry_distinct_raw": 1068,
+    "industry_distinct_clean": 32,
+    "industry_unclassified_rows": 260,
+    "currency_labels_raw": 11,
+    "currency_codes_clean": 31,
+    "job_title_distinct_raw": 12622,
+    "job_title_distinct_norm": 11342,
+    "job_family_other_pct": 4.2,
+    "salary_raw_mean": 145725.42314730101,
+    "salary_raw_max": 870000000.0,
+    "salary_raw_min": 0.0,
+    "salary_usd_clean_mean": 88272.63486237823,
+    "salary_usd_clean_median": 75000.0,
+    "salary_usd_clean_max": 971490.0,
+    "salary_usd_clean_min": 10000.0,
+    "us_rows_ready": 21453
+  },
+  "checks": [
+    {
+      "check_id": "Q01",
+      "description": "Row reconciliation: fact_response == raw_survey",
+      "observed": 26232.0,
+      "expected": "== 26232",
+      "status": "PASS"
+    },
+    {
+      "check_id": "Q02",
+      "description": "No orphan foreign keys",
+      "observed": 0.0,
+      "expected": "== 0",
+      "status": "PASS"
+    },
+    {
+      "check_id": "Q03",
+      "description": "Primary key unique in fact_response",
+      "observed": 0.0,
+      "expected": "== 0",
+      "status": "PASS"
+    },
+    {
+      "check_id": "Q04",
+      "description": "Every country_std in dim_country is unique",
+      "observed": 0.0,
+      "expected": "== 0",
+      "status": "PASS"
+    },
+    {
+      "check_id": "Q05",
+      "description": "Ready rows have salary_usd within [floor, cap]",
+      "observed": 0.0,
+      "expected": "== 0",
+      "status": "PASS"
+    },
+    {
+      "check_id": "Q06",
+      "description": "Ready rows are never duplicates / invalid / impossible-age",
+      "observed": 0.0,
+      "expected": "== 0",
+      "status": "PASS"
+    },
+    {
+      "check_id": "Q07",
+      "description": "Ready rows have a resolved currency",
+      "observed": 0.0,
+      "expected": "== 0",
+      "status": "PASS"
+    },
+    {
+      "check_id": "Q08",
+      "description": "Ready rows: years in field <= total years (after repair)",
+      "observed": 0.0,
+      "expected": "== 0",
+      "status": "PASS"
+    },
+    {
+      "check_id": "Q09",
+      "description": "Ready rows: total_comp_usd >= salary_usd",
+      "observed": 0.0,
+      "expected": "== 0",
+      "status": "PASS"
+    },
+    {
+      "check_id": "Q10",
+      "description": "Dropped duplicates all excluded from analysis",
+      "observed": 0.0,
+      "expected": "== 0",
+      "status": "PASS"
+    },
+    {
+      "check_id": "Q11",
+      "description": "Seniority only takes allowed values",
+      "observed": 0.0,
+      "expected": "== 0",
+      "status": "PASS"
+    },
+    {
+      "check_id": "Q12",
+      "description": "Survey timestamps inside the collection window (2021-04-27..2021-05-17)",
+      "observed": 0.0,
+      "expected": "== 0",
+      "status": "PASS"
+    },
+    {
+      "check_id": "Q13",
+      "description": "No placeholder state for US ready rows other than Unknown/Multiple",
+      "observed": 0.0,
+      "expected": "== 0",
+      "status": "PASS"
+    },
+    {
+      "check_id": "Q14",
+      "description": "Multi-select race options parsed with no comma fragments",
+      "observed": 0.0,
+      "expected": "== 0",
+      "status": "PASS"
+    },
+    {
+      "check_id": "Q15",
+      "description": "Country unresolved rows <= 0.5%",
+      "observed": 0.114,
+      "expected": "<= 0.5",
+      "status": "PASS"
+    },
+    {
+      "check_id": "Q16",
+      "description": "Industry unclassified rows <= 2%",
+      "observed": 0.991,
+      "expected": "<= 2.0",
+      "status": "PASS"
+    },
+    {
+      "check_id": "Q17",
+      "description": "Job family 'Other' <= 6%",
+      "observed": 4.19,
+      "expected": "<= 6.0",
+      "status": "PASS"
+    },
+    {
+      "check_id": "Q18",
+      "description": "At least 97% of rows survive cleaning (not over-filtering)",
+      "observed": 98.61,
+      "expected": ">= 97.0",
+      "status": "PASS"
+    }
+  ]
+}

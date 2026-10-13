@@ -1,0 +1,6 @@
+,r2_log,rmse_log,mae_usd,median_ape_pct,within_20pct,within_30pct
+Baseline: median by job family,0.1905,0.4562,31966.5681,28.5714,36.0914,52.1967
+Ridge (structured features),0.5144,0.3533,24504.0833,20.6102,48.7356,66.8861
+Ridge + job-title TF-IDF,0.5893,0.3249,22235.9357,18.4356,53.4961,72.0953
+Gradient boosting + title tokens,0.5963,0.3222,21779.2824,17.8372,54.6848,72.5848
+Blend (selected),0.6078,0.3176,21495.156,17.6912,55.0926,73.4238

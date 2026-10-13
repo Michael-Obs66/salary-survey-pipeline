@@ -1,0 +1,9 @@
+country_resolution_method,distinct_raw_spellings,rows_covered,pct_rows
+exact,118,13270,50.59
+alias,66,12783,48.73
+fuzzy,51,111,0.42
+substring,28,32,0.12
+unresolved,23,26,0.1
+manual,6,6,0.02
+missing,1,3,0.01
+us_state_in_country,1,1,0.0

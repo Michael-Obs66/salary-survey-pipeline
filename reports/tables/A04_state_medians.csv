@@ -1,0 +1,16 @@
+rank,state,respondents,median_usd,diff_vs_avg_of_states_usd
+1,California,2397,101000.0,26045.0
+2,Washington,1108,91000.0,16045.0
+3,District of Columbia,940,90000.0,15045.0
+4,New York,2015,89500.0,14545.0
+5,Massachusetts,1437,87000.0,12045.0
+6,Maryland,527,82000.0,7045.0
+7,Connecticut,219,81000.0,6045.0
+8,Virginia,722,80000.0,5045.0
+9,Oregon,581,77800.0,2845.0
+10,Illinois,1117,76000.0,1045.0
+11,Colorado,583,75100.0,145.0
+12,Georgia,487,75000.0,45.0
+12,Minnesota,663,75000.0,45.0
+12,New Jersey,360,75000.0,45.0
+12,Texas,1161,75000.0,45.0

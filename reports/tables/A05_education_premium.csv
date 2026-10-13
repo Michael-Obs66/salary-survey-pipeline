@@ -1,0 +1,25 @@
+experience_band,education,respondents,median_usd,premium_vs_college_degree
+5-7 years,"Professional degree (MD, JD, etc.)",218,100000.0,0.508
+5-7 years,PhD,199,92000.0,0.388
+5-7 years,Master's degree,1071,68500.0,0.033
+5-7 years,College degree,1939,66300.0,0.0
+5-7 years,High School,44,46000.0,-0.306
+5-7 years,Some college,144,46000.0,-0.306
+8 - 10 years,"Professional degree (MD, JD, etc.)",232,119500.0,0.593
+8 - 10 years,PhD,196,95000.0,0.267
+8 - 10 years,Master's degree,1472,76000.0,0.013
+8 - 10 years,College degree,1954,75000.0,0.0
+8 - 10 years,Some college,198,56000.0,-0.253
+8 - 10 years,High School,39,54000.0,-0.28
+11 - 20 years,"Professional degree (MD, JD, etc.)",382,125000.0,0.471
+11 - 20 years,PhD,325,100000.0,0.176
+11 - 20 years,Master's degree,2768,86685.0,0.02
+11 - 20 years,College degree,3410,85000.0,0.0
+11 - 20 years,Some college,499,70000.0,-0.176
+11 - 20 years,High School,131,62000.0,-0.271
+21 - 30 years,"Professional degree (MD, JD, etc.)",110,147000.0,0.652
+21 - 30 years,PhD,132,106000.0,0.191
+21 - 30 years,Master's degree,945,97000.0,0.09
+21 - 30 years,College degree,1219,89000.0,0.0
+21 - 30 years,Some college,364,75750.0,-0.149
+21 - 30 years,High School,79,68000.0,-0.236

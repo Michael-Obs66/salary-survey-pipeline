@@ -1,0 +1,7 @@
+reason,rows_excluded
+ambiguous_units_thousands_or_hourly,74
+valid salary but excluded for another rule,50
+below_usd_floor,43
+currency_unresolved,24
+above_usd_cap,15
+zero_or_negative,10
